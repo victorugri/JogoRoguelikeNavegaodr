@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roguelike</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <div style="display: flex; align-items: center;">
+    <div id="streakContainer" style="margin-right: 20px; text-align: center;">
+      <h3>🔥 Streak</h3>
+      <p id="streak">0</p>
+    </div>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+  </div>
+  <div class="hud">
+    <span id="life">❤️ Vida: 3</span>
+    <span id="points">⭐ Pontos: 0</span>
+    <span id="turns">🔄 Turnos: 0</span>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

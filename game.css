@@ -1,0 +1,39 @@
+body {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: "Courier New", monospace;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  
+  canvas {
+    border: 3px solid white;
+    image-rendering: pixelated;
+  }
+  
+  .hud {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .hud span {
+    margin: 0 15px;
+    font-size: 1.2rem;
+  }
+  
+  #streakContainer h3 {
+    color: white;
+    font-family: "Courier New", monospace;
+    margin-bottom: 5px;
+  }
+  
+  #streakContainer p {
+    color: white;
+    font-size: 24px;
+    margin: 0;
+  }
+  

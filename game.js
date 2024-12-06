@@ -24,6 +24,7 @@ let enemies = [];
 let turns = 0;
 let streak = 0;
 let enemyMoveInterval;
+let gameFrozen = false; // Controla se o jogo está congelado
 
 // Referências para HUD
 const hudLife = document.getElementById("life");
@@ -39,7 +40,55 @@ function updateHUD() {
   hudStreak.textContent = streak;
 }
 
-// Função Flood Fill para verificar se o objetivo é alcançável
+// Função para criar animação no jogador
+function animatePlayer(effect) {
+  const originalColor = "white";
+  const effectColor = effect === "damage" ? "red" : "green";
+  let blink = true;
+  let blinks = 0;
+
+  const playerElement = document.getElementById("gameCanvas");
+
+  // Adiciona o efeito de shake ao player
+  if (effect === "damage") {
+    playerElement.classList.add("shake");
+
+    // Tocar som de hit
+    const hitSound = document.getElementById("hitSound");
+    hitSound.currentTime = 0; // Reposicionar para o início
+    hitSound.play();
+  }
+
+  const animationInterval = setInterval(() => {
+    if (blinks >= 6) {
+      clearInterval(animationInterval);
+      playerElement.classList.remove("shake"); // Remove o shake após a animação
+      return;
+    }
+
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const color = blink ? effectColor : originalColor;
+    ctx.fillStyle = color;
+    ctx.fillText(
+      sprites.player,
+      player.x * TILE_SIZE + TILE_SIZE / 2,
+      player.y * TILE_SIZE + TILE_SIZE / 2
+    );
+
+    blink = !blink;
+    blinks++;
+  }, 100);
+}
+
+// Função para calcular a distância entre dois pontos
+function calculateDistance(x1, y1, x2, y2) {
+  return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+}
+
+// Função para verificar acessibilidade no mapa
 function isReachable(startX, startY, targetX, targetY) {
   const visited = Array.from({ length: MAP_HEIGHT }, () =>
     Array(MAP_WIDTH).fill(false)
@@ -85,16 +134,11 @@ function placeItem(item, minDistanceFromPlayer = 0) {
     ) {
       map[y][x] = item;
       if (item === sprites.enemy) {
-        enemies.push({ x, y });
+        enemies.push({ x, y }); // Adiciona inimigos à lista
       }
       return { x, y };
     }
   }
-}
-
-// Função para calcular a distância entre dois pontos
-function calculateDistance(x1, y1, x2, y2) {
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2);
 }
 
 // Função para desenhar o mapa
@@ -115,9 +159,68 @@ function drawMap() {
   updateHUD();
 }
 
+// Função para mover o jogador
+function movePlayer(dx, dy) {
+  if (gameFrozen) return; // Não permitir movimento se o jogo estiver congelado
+
+  const newX = player.x + dx;
+  const newY = player.y + dy;
+
+  if (
+    newX >= 0 &&
+    newX < MAP_WIDTH &&
+    newY >= 0 &&
+    newY < MAP_HEIGHT &&
+    map[newY][newX] !== sprites.wall
+  ) {
+    const target = map[newY][newX];
+
+    if (target === sprites.trap) {
+      player.life--;
+      animatePlayer("damage");
+    } else if (target === sprites.goal) {
+      streak++;
+      player.points += 50;
+
+      // Congelar o jogo e mostrar mensagem
+      gameFrozen = true;
+      const hud = document.querySelector(".hud");
+      const message = document.createElement("div");
+      message.textContent = "🎯 Você alcançou o objetivo!";
+      message.style.color = "gold";
+      message.style.fontSize = "1.5rem";
+      hud.appendChild(message);
+
+      setTimeout(() => {
+        hud.removeChild(message); // Remover mensagem após 2 segundos
+        startGame(); // Reiniciar o jogo com segurança
+      }, 2000); // Esperar 2 segundos antes de reiniciar
+
+      return;
+    }
+
+    if (player.life <= 0) {
+      streak = 0;
+      alert("Game Over!");
+      startGame();
+      return;
+    }
+
+    map[player.y][player.x] = null;
+    player.x = newX;
+    player.y = newY;
+    map[player.y][player.x] = sprites.player;
+
+    turns++;
+  }
+
+  drawMap();
+}
+
 // Movimento dos inimigos
 function moveEnemies() {
-  console.log("Iniciando movimento dos inimigos...");
+  if (gameFrozen) return; // Não permitir movimento se o jogo estiver congelado
+
   for (let enemy of enemies) {
     let moved = false;
 
@@ -176,6 +279,7 @@ function moveEnemies() {
 
     if (enemy.x === player.x && enemy.y === player.y) {
       player.life--;
+      animatePlayer("damage");
       if (player.life <= 0) {
         streak = 0;
         alert("Game Over!");
@@ -190,7 +294,6 @@ function moveEnemies() {
 
 // Função para gerar o mapa inicial
 function generateMap() {
-  console.log("Gerando mapa...");
   map = [];
   enemies = [];
   for (let y = 0; y < MAP_HEIGHT; y++) {
@@ -210,48 +313,6 @@ function generateMap() {
   for (let i = 0; i < 3; i++) placeItem(sprites.health);
 }
 
-// Função para mover o jogador
-function movePlayer(dx, dy) {
-  const newX = player.x + dx;
-  const newY = player.y + dy;
-
-  if (
-    newX >= 0 &&
-    newX < MAP_WIDTH &&
-    newY >= 0 &&
-    newY < MAP_HEIGHT &&
-    map[newY][newX] !== sprites.wall
-  ) {
-    const target = map[newY][newX];
-
-    if (target === sprites.trap) {
-      player.life--;
-    } else if (target === sprites.goal) {
-      streak++;
-      player.points += 50;
-      alert("Parabéns! Você alcançou o objetivo!");
-      startGame();
-      return;
-    }
-
-    if (player.life <= 0) {
-      streak = 0;
-      alert("Game Over!");
-      startGame();
-      return;
-    }
-
-    map[player.y][player.x] = null;
-    player.x = newX;
-    player.y = newY;
-    map[player.y][player.x] = sprites.player;
-
-    turns++;
-  }
-
-  drawMap();
-}
-
 // Detectar entrada do teclado
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowUp") movePlayer(0, -1);
@@ -262,21 +323,18 @@ document.addEventListener("keydown", (e) => {
 
 // Iniciar o jogo
 function startGame() {
-  console.log("Iniciando jogo...");
   clearInterval(enemyMoveInterval);
   player = { x: 1, y: 1, life: 3, points: player.points, streak: streak };
   turns = 0;
   enemies = [];
   map = [];
+  gameFrozen = false; // Descongela o jogo
 
   generateMap();
   drawMap();
   updateHUD();
 
-  enemyMoveInterval = setInterval(() => {
-    console.log("Movimento dos inimigos iniciado.");
-    moveEnemies();
-  }, ENEMY_SPEED);
+  enemyMoveInterval = setInterval(moveEnemies, ENEMY_SPEED);
 }
 
 startGame();

@@ -194,7 +194,7 @@ function movePlayer(dx, dy) {
       setTimeout(() => {
         hud.removeChild(message); // Remover mensagem após 2 segundos
         startGame(); // Reiniciar o jogo com segurança
-      }, 2000); // Esperar 2 segundos antes de reiniciar
+      }, 1000); // Esperar 1 segundo antes de reiniciar
 
       return;
     }
